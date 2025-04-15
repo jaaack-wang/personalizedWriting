@@ -172,3 +172,8 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+dataset*
+.DS_Store
+**/.DS_Store
+dataset_prepare
