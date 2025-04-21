@@ -98,6 +98,7 @@ def create_AV_train_valid_test_sets(fp_train,
 
 
 if __name__ == "__main__":
+    
     create_AV_train_valid_test_sets("../dataset_prepare/blog_train.csv", "../dataset_prepare/blog_AV_datasets")
     create_AV_train_valid_test_sets("../dataset_prepare/CCAT50_train.csv", "../dataset_prepare/CCAT50_AV_datasets")
     create_AV_train_valid_test_sets("../dataset_prepare/enron_train.csv", "../dataset_prepare/enron_AV_datasets")
