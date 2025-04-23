@@ -30,18 +30,23 @@ Begin your response below:
 def get_prompt_template_for_summarizing_text():
     
     prompt_tmp = '''
-You will be given a piece of text. Your task is to summarize the text in a concise and clear manner, \
-capturing the main ideas and key points while maintaining the original meaning.
+You will be given a piece of text. Your task is to summarize the text in a concise and clear manner, capturing the main ideas and key points while maintaining the original meaning.
+
 
 ### Text to Summarize
 
+
 $text
 
+
 ### Instructions
+
 
 - Provide a summary that is brief yet comprehensive.
 - Ensure that the summary accurately reflects the content of the original text.
 - Avoid adding any personal opinions or interpretations.
+- Do not output anything other than the summary.
+
 
 Begin your response below:
     '''.strip()
