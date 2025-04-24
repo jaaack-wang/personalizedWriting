@@ -1,4 +1,6 @@
+import math
 from litellm import completion
+from nltk.tokenize import word_tokenize
 
 
 def get_completion(prompt, 
@@ -19,3 +21,18 @@ def get_completion(prompt,
             continue
     
     return "SOMETHING_WRONG"
+
+
+def count_words(text):
+    return len(word_tokenize(text))
+
+
+def round_up_to_nearest_10(n):
+    return math.ceil(n / 10) * 10
+
+
+def list_writing_samples(samples):
+    return '\n\n'.join([f'Sample#{ix+1}\n\n{sample.strip()}' 
+                      for ix, sample in enumerate(samples)])
+
+
