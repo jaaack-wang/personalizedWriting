@@ -150,13 +150,14 @@ def prompt_llm_to_generate_writing(df, save_dir, model,
 
     if os.path.exists(fp):
         llm_df = pd.read_csv(fp)
-
-        if len(llm_df) == len(df):
-            print(f"Writing already generated for {model_name}.")
+        llm_df.writing = llm_df.writing.replace("SOMETHING_WRONG", pd.NA)
+        num_already_generated = llm_df.writing.notna().sum()
+        if len(df) == num_already_generated:
+            print(f"All writing samples already generated for {model_name}.")
             return
         else:
-            print(f"Writing generation interrupted for {model_name}. Continuing from {len(llm_df)}.")
-            indices = list(range(len(llm_df), len(df)))
+            print(f"{num_already_generated} writing samples generated for {model_name}. Continuing...")
+            indices = sorted(set(df.index) - set(llm_df[llm_df.writing.notna()].index))
     else:
         indices = list(range(len(df)))
         llm_df = pd.DataFrame(columns=["writing"])

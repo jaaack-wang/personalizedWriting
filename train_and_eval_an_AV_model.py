@@ -103,7 +103,9 @@ def main():
     dataset = args.data_dir.split("/")[-1]
     model_output_dir = f"./AV_models/{args.model_name.split('/')[-1]}/" + dataset
 
-    model = AutoModelForSequenceClassification.from_pretrained(args.model_name, num_labels=2)
+    model = AutoModelForSequenceClassification.from_pretrained(args.model_name, 
+                                                               num_labels=2, 
+                                                               device_map="auto")
 
     training_args = TrainingArguments(
         output_dir=model_output_dir,  # Output directory
@@ -120,6 +122,8 @@ def main():
         eval_strategy=args.evaluation_strategy,  # Evaluation strategy to adopt during training
         save_strategy=args.evaluation_strategy,  # Save strategy to adopt during training
         load_best_model_at_end= bool_str_to_bool(args.load_best_model_at_end),  # Load the best model at the end of training
+        metric_for_best_model="f1",
+        greater_is_better=True,
     )
 
     # Create the Trainer object
