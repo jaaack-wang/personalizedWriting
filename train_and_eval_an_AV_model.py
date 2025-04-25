@@ -13,7 +13,7 @@ from torch.nn.functional import softmax
 
 
 def get_args():
-    parser = argparse.ArgumentParser(description="Create AV datasets")
+    parser = argparse.ArgumentParser(description="Train and evaluate an AV model.")
     parser.add_argument("--data_dir", type=str, required=True, help="Directory containing the dataset")
     parser.add_argument("--model_name", type=str, default="allenai/longformer-base-4096", help="Name of the model to be used")
     parser.add_argument("--max_length", type=int, default=2048, help="Maximum length of the input sequences")
@@ -150,15 +150,17 @@ def main():
     y_test = test_df.label.tolist()
     print(classification_report(y_test, y_pred))
 
-    with open(os.path.join(args.data_dir, "classification_report.txt"), "w") as f:
+    model_name = args.model_name.split('/')[-1]
+    with open(os.path.join(args.data_dir, f"{model_name}-classification_report.txt"), "w") as f:
         f.write(classification_report(y_test, y_pred))
 
     logits = predictions.predictions  # This contains the raw logits output
     # Convert logits to probabilities using softmax
     probabilities = softmax(torch.tensor(logits), dim=1).tolist()
-    test_df["prediction"]=y_pred
-    test_df["probabilities"] = [prob[1] for prob in probabilities]
-    test_df.to_csv(os.path.join(args.data_dir, "test_results.csv"), index=False)
+    test_df[f"{model}-prediction"]=y_pred
+    test_df[f"{model}-probabilities"] = [prob[1] for prob in probabilities]
+    test_df.to_csv(os.path.join(args.data_dire, "test.csv"), index=False)
+    print(f"Test predictions saved to {os.path.join(args.data_dir, 'test.csv')}")
 
 
 if __name__ == "__main__":
