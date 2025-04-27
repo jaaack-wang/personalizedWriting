@@ -1,5 +1,6 @@
 import os
 import torch
+import json
 import argparse
 import pandas as pd
 from transformers import AutoTokenizer
@@ -8,6 +9,7 @@ import evaluate
 import numpy as np
 from transformers import Trainer, TrainingArguments
 from transformers import AutoModelForSequenceClassification
+from transformers import EarlyStoppingCallback
 from sklearn.metrics import classification_report
 from torch.nn.functional import softmax
 
@@ -29,7 +31,9 @@ def get_args():
     parser.add_argument("--load_best_model_at_end", type=str, default="True", help="Load the best model at the end of training")
     parser.add_argument("--fp16", type=str, default="True", help="Use mixed precision training")
     parser.add_argument("--save_total_limit", type=int, default=1, help="Limit the total amount of checkpoints")
+    parser.add_argument("--early_stopping_patience", type=int, default=3, help="Early stopping patience")
     parser.add_argument("--resume_from_checkpoint", type=str, default="True", help="Resume training from checkpoint")
+    parser.add_argument("--do_toy_run", action="store_true", help="Run a toy example for debugging")
 
     return parser.parse_args()
 
@@ -72,12 +76,32 @@ def main():
     args = get_args()
     print(args)
 
+    # Load the model for sequence classification
+    if args.data_dir.endswith("/"):
+        args.data_dir = args.data_dir[:-1]
+
+    dataset = args.data_dir.split("/")[-1]
+    model_output_dir = f"./AV_models/{args.model_name.split('/')[-1]}/" + dataset
+    os.makedirs(model_output_dir, exist_ok=True)
+
+    # save the args in a json file
+    args_dict = vars(args)
+    with open(os.path.join(model_output_dir, "args.json"), "w") as f:
+        json.dump(args_dict, f, indent=4)
+        print(f"Saved args to {os.path.join(model_output_dir, 'args.json')}")
+
     os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'max_split_size_mb:128'
     torch.cuda.empty_cache()
 
     # Load the datasets
     train_df, valid_df, test_df = load_AV_dataset(args.data_dir)
     print(f"Loaded datasets from {args.data_dir}")
+
+    # If do_toy_run is set, sample a small fraction of the dataset
+    if args.do_toy_run:
+        train_df = train_df.sample(frac=0.1).reset_index(drop=True)
+        valid_df = valid_df.sample(frac=0.1).reset_index(drop=True)
+        print("Running a toy example (10% of original train/valid samples) for debugging")
 
     # Load the tokenizer and tokenize the datasets
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
@@ -95,13 +119,6 @@ def main():
     valid_dataset = CustomDataset(valid_encodings, valid_df['label'].tolist())
     test_dataset = CustomDataset(test_encodings, test_df['label'].tolist())
 
-    # Load the Longformer model for sequence classification
-
-    if args.data_dir.endswith("/"):
-        args.data_dir = args.data_dir[:-1]
-
-    dataset = args.data_dir.split("/")[-1]
-    model_output_dir = f"./AV_models/{args.model_name.split('/')[-1]}/" + dataset
 
     model = AutoModelForSequenceClassification.from_pretrained(args.model_name, 
                                                                num_labels=2, 
@@ -133,6 +150,7 @@ def main():
         train_dataset=train_dataset,
         eval_dataset=valid_dataset,
         compute_metrics=compute_metrics,
+        callbacks=[EarlyStoppingCallback(early_stopping_patience=args.early_stopping_patience)],  # Early stopping callback
     )
 
     # Train the model
@@ -151,15 +169,15 @@ def main():
     print(classification_report(y_test, y_pred))
 
     model_name = args.model_name.split('/')[-1]
-    with open(os.path.join(args.data_dir, f"{model_name}-classification_report.txt"), "w") as f:
-        f.write(classification_report(y_test, y_pred))
+    # with open(os.path.join(args.data_dir, f"{model_name}-classification_report.txt"), "w") as f:
+    #     f.write(classification_report(y_test, y_pred))
 
     logits = predictions.predictions  # This contains the raw logits output
     # Convert logits to probabilities using softmax
     probabilities = softmax(torch.tensor(logits), dim=1).tolist()
-    test_df[f"{model}-prediction"]=y_pred
-    test_df[f"{model}-probabilities"] = [prob[1] for prob in probabilities]
-    test_df.to_csv(os.path.join(args.data_dire, "test.csv"), index=False)
+    test_df[f"{model_name}-prediction"]=y_pred
+    test_df[f"{model_name}-probabilities"] = [prob[1] for prob in probabilities]
+    test_df.to_csv(os.path.join(args.data_dir, "test.csv"), index=False)
     print(f"Test predictions saved to {os.path.join(args.data_dir, 'test.csv')}")
 
 

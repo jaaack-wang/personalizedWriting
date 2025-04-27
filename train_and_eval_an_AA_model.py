@@ -12,9 +12,12 @@ from sklearn.model_selection import train_test_split
 from transformers import AutoTokenizer
 from transformers import AutoModelForSequenceClassification
 from transformers import Trainer, TrainingArguments
+from transformers import EarlyStoppingCallback
+
 
 from sklearn.metrics import classification_report
 from torch.nn.functional import softmax
+
 
 
 def get_args():
@@ -22,8 +25,8 @@ def get_args():
     parser.add_argument("--training_df_fp", type=str, required=True, help="Filepath for the training dataset")
     parser.add_argument("--test_df_fp", type=str, required=True, help="Filepath for the test dataset")
 
-    parser.add_argument("--model_name", type=str, default="google-bert/bert-base-uncased", help="Name of the model to be used")
-    parser.add_argument("--max_length", type=int, default=512, help="Maximum length of the input sequences")
+    parser.add_argument("--model_name", type=str, default="allenai/longformer-base-4096", help="Name of the model to be used")
+    parser.add_argument("--max_length", type=int, default=2048, help="Maximum length of the input sequences")
     parser.add_argument("--num_train_epochs", type=int, default=10, help="Number of training epochs")
     parser.add_argument("--train_batch_size", type=int, default=8, help="Batch size for training")
     parser.add_argument("--eval_batch_size", type=int, default=16, help="Batch size for evaluation")
@@ -36,6 +39,8 @@ def get_args():
     parser.add_argument("--load_best_model_at_end", type=str, default="True", help="Load the best model at the end of training")
     parser.add_argument("--fp16", type=str, default="True", help="Use mixed precision training")
     parser.add_argument("--save_total_limit", type=int, default=1, help="Limit the total amount of checkpoints")
+    parser.add_argument("--early_stopping_patience", type=int, default=3, help="Early stopping patience")
+    parser.add_argument("--do_toy_run", action="store_true", help="Run a toy example for debugging")
     parser.add_argument("--resume_from_checkpoint", type=str, default="True", help="Resume training from checkpoint")
 
     return parser.parse_args()
@@ -83,6 +88,11 @@ def main():
 
     # Load the training and test datasets
     df = pd.read_csv(args.training_df_fp)
+
+    if args.do_toy_run:
+        df = df.sample(1000, random_state=42).reset_index(drop=True)
+        print(f"Running a toy example with {len(df)} samples")
+    
     test_df = pd.read_csv(args.test_df_fp)
 
     # Get the author map
@@ -147,6 +157,7 @@ def main():
         train_dataset=train_dataset,
         eval_dataset=valid_dataset,
         compute_metrics=compute_metrics,
+        callbacks=[EarlyStoppingCallback(early_stopping_patience=args.early_stopping_patience)],  # early stopping callback
     )
 
     # Train the model
