@@ -180,8 +180,8 @@ def main():
     probabilities = softmax(torch.tensor(logits), dim=1).tolist()
 
     model_name = args.model_name.split('/')[-1]
-    test_df[f"{model_name}-prediction"]=y_pred
-    test_df[f"{model_name}-probabilities"] = [prob[1] for prob in probabilities]
+    test_df[f"{model_name}-AA-prediction"]=y_pred
+    test_df[f"{model_name}-AA-probabilities"] = [prob[1] for prob in probabilities]
     test_df.to_csv(args.test_df_fp, index=False)
     print(f"Predictions and probabilities by {args.model_name} saved to {args.test_df_fp}")
 
