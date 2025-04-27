@@ -96,10 +96,10 @@ def main():
     test_df = pd.read_csv(args.test_df_fp)
 
     # Get the author map
-    if "label" not in df.columns:
+    if "AA-label" not in df.columns:
         author_map = get_author_map(df)
-        df["label"] = df["author"].map(author_map)
-        test_df["label"] = test_df["author"].map(author_map)
+        df["AA-label"] = df["author"].map(author_map)
+        test_df["AA-label"] = test_df["author"].map(author_map)
         df.to_csv(args.training_df_fp, index=False)
         test_df.to_csv(args.test_df_fp, index=False)
         print(f"Appended author labels to {args.training_df_fp} and {args.test_df_fp}") 
@@ -107,7 +107,7 @@ def main():
     # Split the training data into train and validation sets
     train_df, valid_df = train_test_split(df, test_size=0.2, 
                                           random_state=42, 
-                                          stratify=df["label"])
+                                          stratify=df["AA-label"])
     train_df = train_df.reset_index(drop=True)
     valid_df = valid_df.reset_index(drop=True)
 
@@ -122,14 +122,14 @@ def main():
     test_encodings = tokenizer(list(test_df['text']),
                                truncation=True, padding="max_length",
                                max_length=args.max_length)
-    train_dataset = CustomDataset(train_encodings, train_df['label'])
-    valid_dataset = CustomDataset(valid_encodings, valid_df['label'])
-    test_dataset = CustomDataset(test_encodings, test_df['label'])
+    train_dataset = CustomDataset(train_encodings, train_df['AA-label'])
+    valid_dataset = CustomDataset(valid_encodings, valid_df['AA-label'])
+    test_dataset = CustomDataset(test_encodings, test_df['AA-label'])
 
     # Load the model and train it
     model_output_dir = f"./AA_models/{args.model_name.split('/')[-1]}/" + dataset
     model = AutoModelForSequenceClassification.from_pretrained(args.model_name, device_map="auto",
-                                                               num_labels=len(df["label"].unique()))
+                                                               num_labels=len(df["AA-label"].unique()))
     
     training_args = TrainingArguments(
         output_dir=model_output_dir,  # output directory

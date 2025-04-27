@@ -175,8 +175,8 @@ def main():
     logits = predictions.predictions  # This contains the raw logits output
     # Convert logits to probabilities using softmax
     probabilities = softmax(torch.tensor(logits), dim=1).tolist()
-    test_df[f"{model_name}-prediction"]=y_pred
-    test_df[f"{model_name}-probabilities"] = [prob[1] for prob in probabilities]
+    test_df[f"{model_name}-AV-prediction"]=y_pred
+    test_df[f"{model_name}-AV-probabilities"] = [prob[1] for prob in probabilities]
     test_df.to_csv(os.path.join(args.data_dir, "test.csv"), index=False)
     print(f"Test predictions saved to {os.path.join(args.data_dir, 'test.csv')}")
 
