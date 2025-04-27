@@ -8,6 +8,13 @@
 - LLM_writing (folder, will be created once `generate_llm_writing.py` is run)
 - other `.py` and `.sh` files as you can see
 
+<p align='center'>
+ <img align="center" src="./fileStructure.png">
+</p>
+
+
+
+
 ### Run the code
 
 1. Create a conda environment: `conda create -n PW python=3.12.9`
