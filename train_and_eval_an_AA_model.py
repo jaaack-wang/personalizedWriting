@@ -1,4 +1,5 @@
 import os
+import json
 import argparse
 import pandas as pd
 
@@ -86,13 +87,16 @@ def main():
     dataset_ = args.test_df_fp.split("/")[-1].split(".")[0].split("_")[0]
     assert dataset == dataset_, f"Dataset name mismatch: {dataset} != {dataset_}"
 
+    # save the args in a json file
+    model_output_dir = f"./AA_models/{args.model_name.split('/')[-1]}/" + dataset
+    os.makedirs(model_output_dir, exist_ok=True)
+    args_dict = vars(args)
+    with open(os.path.join(model_output_dir, "args.json"), "w") as f:
+        json.dump(args_dict, f, indent=4)
+        print(f"Saved args to {os.path.join(model_output_dir, 'args.json')}")
+
     # Load the training and test datasets
     df = pd.read_csv(args.training_df_fp)
-
-    if args.do_toy_run:
-        df = df.sample(1000, random_state=42).reset_index(drop=True)
-        print(f"Running a toy example with {len(df)} samples")
-    
     test_df = pd.read_csv(args.test_df_fp)
 
     # Get the author map
@@ -104,6 +108,10 @@ def main():
         test_df.to_csv(args.test_df_fp, index=False)
         print(f"Appended author labels to {args.training_df_fp} and {args.test_df_fp}") 
     
+    if args.do_toy_run:
+        df = df.sample(1000, random_state=42).reset_index(drop=True)
+        print(f"Running a toy example with {len(df)} samples")
+
     # Split the training data into train and validation sets
     train_df, valid_df = train_test_split(df, test_size=0.2, 
                                           random_state=42, 
@@ -127,7 +135,6 @@ def main():
     test_dataset = CustomDataset(test_encodings, test_df['AA-label'])
 
     # Load the model and train it
-    model_output_dir = f"./AA_models/{args.model_name.split('/')[-1]}/" + dataset
     model = AutoModelForSequenceClassification.from_pretrained(args.model_name, device_map="auto",
                                                                num_labels=len(df["AA-label"].unique()))
     
@@ -172,7 +179,7 @@ def main():
     predictions = trainer.predict(test_dataset)
     y_pred = predictions.predictions.argmax(-1)
 
-    y_test = test_df.label.tolist()
+    y_test = test_df["AA-label"].tolist()
     print(classification_report(y_test, y_pred))
 
     logits = predictions.predictions  # This contains the raw logits output
