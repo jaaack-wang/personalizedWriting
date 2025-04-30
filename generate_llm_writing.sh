@@ -35,7 +35,7 @@
 
 
 # ================== gemini-2.0-flash ==================
-# setting=1
+# setting=1 ### Done (A few cases not generated due to safe guardrails)
 # LLM="gemini/gemini-2.0-flash"
 # python generate_llm_writing.py --training_df_fp=dataset_prepare/blog_train.csv --evaluation_df_fp=dataset_prepare/blog_test.csv --setting=$setting --llm=$LLM
 # python generate_llm_writing.py --training_df_fp=dataset_prepare/CCAT50_train.csv --evaluation_df_fp=dataset_prepare/CCAT50_test.csv --setting=$setting --llm=$LLM
@@ -73,9 +73,9 @@
 # setting=1
 # LLM="gemini/gemma-3-27b-it"
 # python generate_llm_writing.py --training_df_fp=dataset_prepare/CCAT50_train.csv --evaluation_df_fp=dataset_prepare/CCAT50_test.csv --setting=$setting --llm=$LLM
-# python generate_llm_writing.py --training_df_fp=dataset_prepare/enron_train.csv --evaluation_df_fp=dataset_prepare/enron_test.csv --setting=$setting --llm=$LLM
 # python generate_llm_writing.py --training_df_fp=dataset_prepare/reddit_train.csv --evaluation_df_fp=dataset_prepare/reddit_test.csv --setting=$setting --llm=$LLM
 # python generate_llm_writing.py --training_df_fp=dataset_prepare/blog_train.csv --evaluation_df_fp=dataset_prepare/blog_test.csv --setting=$setting --llm=$LLM
+# python generate_llm_writing.py --training_df_fp=dataset_prepare/enron_train.csv --evaluation_df_fp=dataset_prepare/enron_test.csv --setting=$setting --llm=$LLM
 
 
 # setting=4

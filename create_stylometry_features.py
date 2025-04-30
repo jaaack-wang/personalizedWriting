@@ -6,15 +6,8 @@
 # pip install spacy
 # python -m spacy download en_core_web_sm
 
-from glob import glob
-import shutil
-import glob
-import json
-import math
 import sys
 import argparse
-import numpy as np
-import matplotlib.pyplot as plt
 from collections import defaultdict, Counter
 from statistics import stdev
 import pandas as pd
@@ -284,9 +277,9 @@ def main():
       sys.exit(1)
 
     print('processing liwc features')
-    df['liwc_features'] = df['writing'].progress_apply(get_liwc_features)
+    df['liwc_features'] = df['writing'].progress_apply(lambda x: get_liwc_features(x) if isinstance(x, str) else {})
     print('processing writeprint features')
-    df['writeprint_features'] = df['writing'].progress_apply(extract_writeprint_features)
+    df['writeprint_features'] = df['writing'].progress_apply(lambda x: extract_writeprint_features(x) if isinstance(x, str) else {})
     df.to_csv(output_filename, index=False)
 
     print(f'stylometry feature extraction completed for Setting{setting}/{dataset}/{llm_name}')

@@ -5,6 +5,7 @@ import uuid
 import json
 import random
 from time import sleep
+import os
 from os import listdir, walk
 from os.path import isfile, join
 
@@ -81,3 +82,13 @@ def get_filepathes_from_dir(file_dir, include_sub_dir=False,
         random.shuffle(filepathes)
         
     return filepathes
+
+
+def find_directories_with_file(root_dir, target_filename):
+    matching_dirs = []
+
+    for dirpath, _, filenames in os.walk(root_dir, topdown=False):
+        if target_filename in filenames:
+            matching_dirs.append(dirpath)
+
+    return matching_dirs
