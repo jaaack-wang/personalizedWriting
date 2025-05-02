@@ -34,6 +34,7 @@ def get_args():
     parser.add_argument("--early_stopping_patience", type=int, default=3, help="Early stopping patience")
     parser.add_argument("--resume_from_checkpoint", type=str, default="True", help="Resume training from checkpoint")
     parser.add_argument("--do_toy_run", action="store_true", help="Run a toy example for debugging")
+    parser.add_argument("--gpu_id", type=str, default="0", help="GPU ID to use for training")
 
     return parser.parse_args()
 
@@ -75,6 +76,7 @@ def compute_metrics(eval_pred):
 def main():
     args = get_args()
     print(args)
+    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu_id
 
     # Load the model for sequence classification
     if args.data_dir.endswith("/"):

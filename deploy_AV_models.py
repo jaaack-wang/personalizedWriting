@@ -3,10 +3,16 @@ import json
 import pandas as pd
 
 import torch
+import argparse
+from torch.nn.functional import softmax
 from torch.utils.data import Dataset
 from transformers import AutoTokenizer
-from sklearn.metrics import classification_report
 from transformers import Trainer, AutoModelForSequenceClassification
+
+
+parser = argparse.ArgumentParser(description="Deploy an AA model.")
+parser.add_argument("--gpu_id", type=str, default="0", help="GPU ID to use for training")
+os.environ["CUDA_VISIBLE_DEVICES"] = parser.gpu_id
 
 
 def get_text_encodings(model_name, texts1, texts2, max_length):

@@ -43,6 +43,7 @@ def get_args():
     parser.add_argument("--early_stopping_patience", type=int, default=3, help="Early stopping patience")
     parser.add_argument("--do_toy_run", action="store_true", help="Run a toy example for debugging")
     parser.add_argument("--resume_from_checkpoint", type=str, default="True", help="Resume training from checkpoint")
+    parser.add_argument("--gpu_id", type=str, default="0", help="GPU ID to use for training")
 
     return parser.parse_args()
 
@@ -83,6 +84,8 @@ def main():
     args = get_args()
     # Check if the dataset names match
     # between training and evaluation datasets
+    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu_id
+
     dataset = args.training_df_fp.split("/")[-1].split(".")[0].split("_")[0]
     dataset_ = args.test_df_fp.split("/")[-1].split(".")[0].split("_")[0]
     assert dataset == dataset_, f"Dataset name mismatch: {dataset} != {dataset_}"
