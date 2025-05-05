@@ -13,7 +13,9 @@ from transformers import Trainer, AutoModelForSequenceClassification
 
 parser = argparse.ArgumentParser(description="Deploy an AA model.")
 parser.add_argument("--gpu_id", type=str, default="0", help="GPU ID to use for training")
-os.environ["CUDA_VISIBLE_DEVICES"] = parser.gpu_id
+parser.add_argument("--overwrite", action="store_true", help="Overwrite existing predictions")
+args = parser.parse_args()
+os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu_id
 
 
 def get_text_encodings(model_name, texts, max_length):
@@ -98,6 +100,9 @@ def deploy_an_AA_model(ckpt_dir, deploy_fp,
     # Convert to Python lists for further use
     top_k_probs = topk_values.tolist()
     top_k_preds = topk_indices.tolist()
+
+    df = pd.read_csv(deploy_fp) # reload to avoid overwriting
+    df[text_col] = df[text_col].fillna("SOMETHING_WRONG")
     df[f"{model_name__}-AA-top_k-probabilities"] = top_k_probs
     df[f"{model_name__}-AA-top_k-predictions"] = top_k_preds
     df.to_csv(deploy_fp, index=False)
@@ -154,7 +159,7 @@ def main():
                     print(f"===> Deploying model {model} on {llm_fp}")
                     deploy_an_AA_model(ckpt_dir, llm_fp,
                                     text_col="writing", 
-                                    top_k=10, overwrite=False)
-                
+                                    top_k=10, overwrite=args.overwrite)
+
 if __name__ == "__main__":
     main()

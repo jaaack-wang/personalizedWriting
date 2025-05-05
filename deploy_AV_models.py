@@ -12,7 +12,9 @@ from transformers import Trainer, AutoModelForSequenceClassification
 
 parser = argparse.ArgumentParser(description="Deploy an AA model.")
 parser.add_argument("--gpu_id", type=str, default="0", help="GPU ID to use for training")
-os.environ["CUDA_VISIBLE_DEVICES"] = parser.gpu_id
+parser.add_argument("--overwrite", action="store_true", help="Overwrite existing predictions")
+args = parser.parse_args()
+os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu_id
 
 
 def get_text_encodings(model_name, texts1, texts2, max_length):
@@ -90,7 +92,6 @@ def deploy_an_AV_model(ckpt_dir,
     df1[text_col1] = df1[text_col1].fillna("SOMETHING_WRONG")
     df2[text_col2] = df2[text_col2].fillna("SOMETHING_WRONG")
 
-
     labels = [0] * len(df1)  # Dummy labels, not used in prediction
     dataset = get_dataset(model_name, df1[text_col1].tolist(), 
                           df2[text_col2].tolist(), max_length, labels)
@@ -102,8 +103,10 @@ def deploy_an_AV_model(ckpt_dir,
     # Convert logits to probabilities using softmax
     probabilities = softmax(torch.tensor(logits), dim=1).tolist()
 
-    df2[f"{model_name__}-prediction"] = y_pred
-    df2[f"{model_name__}-probabilities"] = probabilities
+    df2 = pd.read_csv(deploy_fp2) # reload to avoid overwriting
+    df2[text_col2] = df2[text_col2].fillna("SOMETHING_WRONG")
+    df2[f"{model_name__}-AV-prediction"] = y_pred
+    df2[f"{model_name__}-AV-probabilities"] = probabilities
     df2.to_csv(deploy_fp2, index=False)
     print(f"Deployment completed. Results saved to {deploy_fp2}")
 
@@ -157,7 +160,7 @@ def main():
                     deploy_an_AV_model(ckpt_dir, prompt_fp, 
                                        llm_fp, text_col1="text",
                                        text_col2="writing",
-                                       overwrite=False)
+                                       overwrite=args.overwrite)
 
 
 if __name__ == "__main__":
