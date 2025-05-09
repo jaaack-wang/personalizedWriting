@@ -131,6 +131,14 @@
 # python generate_llm_writing.py --training_df_fp=dataset_followup/reddit_train.csv --evaluation_df_fp=dataset_followup/reddit_test.csv --setting=$setting --llm=$LLM
 
 
+# setting=6
+# LLM="openai/gpt-4o-2024-08-06"
+# python generate_llm_writing.py --training_df_fp=dataset_followup/blog_train.csv --evaluation_df_fp=dataset_followup/blog_test.csv --setting=$setting --llm=$LLM
+# python generate_llm_writing.py --training_df_fp=dataset_followup/CCAT50_train.csv --evaluation_df_fp=dataset_followup/CCAT50_test.csv --setting=$setting --llm=$LLM
+# python generate_llm_writing.py --training_df_fp=dataset_followup/enron_train.csv --evaluation_df_fp=dataset_followup/enron_test.csv --setting=$setting --llm=$LLM
+# python generate_llm_writing.py --training_df_fp=dataset_followup/reddit_train.csv --evaluation_df_fp=dataset_followup/reddit_test.csv --setting=$setting --llm=$LLM
+
+
 
 # ================== gemini-2.0-flash ==================
 
@@ -144,6 +152,14 @@
 
 
 # setting=3
+# LLM="gemini/gemini-2.0-flash"
+# python generate_llm_writing.py --training_df_fp=dataset_followup/blog_train.csv --evaluation_df_fp=dataset_followup/blog_test.csv --setting=$setting --llm=$LLM
+# python generate_llm_writing.py --training_df_fp=dataset_followup/CCAT50_train.csv --evaluation_df_fp=dataset_followup/CCAT50_test.csv --setting=$setting --llm=$LLM
+# python generate_llm_writing.py --training_df_fp=dataset_followup/enron_train.csv --evaluation_df_fp=dataset_followup/enron_test.csv --setting=$setting --llm=$LLM
+# python generate_llm_writing.py --training_df_fp=dataset_followup/reddit_train.csv --evaluation_df_fp=dataset_followup/reddit_test.csv --setting=$setting --llm=$LLM
+
+
+# setting=6
 # LLM="gemini/gemini-2.0-flash"
 # python generate_llm_writing.py --training_df_fp=dataset_followup/blog_train.csv --evaluation_df_fp=dataset_followup/blog_test.csv --setting=$setting --llm=$LLM
 # python generate_llm_writing.py --training_df_fp=dataset_followup/CCAT50_train.csv --evaluation_df_fp=dataset_followup/CCAT50_test.csv --setting=$setting --llm=$LLM
@@ -167,3 +183,11 @@
 # python generate_llm_writing.py --training_df_fp=dataset_followup/CCAT50_train.csv --evaluation_df_fp=dataset_followup/CCAT50_test.csv --setting=$setting --llm=$LLM
 # python generate_llm_writing.py --training_df_fp=dataset_followup/enron_train.csv --evaluation_df_fp=dataset_followup/enron_test.csv --setting=$setting --llm=$LLM
 # python generate_llm_writing.py --training_df_fp=dataset_followup/reddit_train.csv --evaluation_df_fp=dataset_followup/reddit_test.csv --setting=$setting --llm=$LLM
+
+
+setting=6
+LLM="groq/meta-llama/llama-4-maverick-17b-128e-instruct"
+python generate_llm_writing.py --training_df_fp=dataset_followup/blog_train.csv --evaluation_df_fp=dataset_followup/blog_test.csv --setting=$setting --llm=$LLM
+python generate_llm_writing.py --training_df_fp=dataset_followup/CCAT50_train.csv --evaluation_df_fp=dataset_followup/CCAT50_test.csv --setting=$setting --llm=$LLM
+python generate_llm_writing.py --training_df_fp=dataset_followup/enron_train.csv --evaluation_df_fp=dataset_followup/enron_test.csv --setting=$setting --llm=$LLM
+python generate_llm_writing.py --training_df_fp=dataset_followup/reddit_train.csv --evaluation_df_fp=dataset_followup/reddit_test.csv --setting=$setting --llm=$LLM

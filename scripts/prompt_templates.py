@@ -52,6 +52,15 @@ Begin your response below:
     return Template(prompt_tmp)
 
 
+def get_prompt_template_for_writing_setting2():
+    return get_prompt_template_for_writing_setting1()
+
+
+
+def get_prompt_template_for_writing_setting3():
+    return get_prompt_template_for_writing_setting1()
+
+
 def get_prompt_template_for_writing_setting4():
     prompt_tmp = '''
 Given the following summary, your task is to generate a \
