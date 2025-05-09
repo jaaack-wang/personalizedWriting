@@ -79,7 +79,7 @@ def deploy_an_AV_model(ckpt_dir,
         f"Got {df1.shape[0]} and {df2.shape[0]} rows."
 
     model_name__ = model_name.split('/')[-1]
-    if f"{model_name__}-prediction" in df2.columns and not overwrite:
+    if f"{model_name__}-AV-prediction" in df2.columns and not overwrite:
         print(f"Column '{model_name__}-prediction' already exists in the DataFrame. "
               f"Set 'overwrite=True' to overwrite it.")
         return
