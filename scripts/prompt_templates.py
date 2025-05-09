@@ -1,5 +1,6 @@
 from string import Template
 
+
 def get_prompt_template_for_summarizing_text():
     
     prompt_tmp = '''
@@ -77,3 +78,51 @@ Begin your response below:
     return Template(prompt_tmp)
 
 
+def get_prompt_template_for_writing_setting5():
+
+    summary_only_prompt_tmp = '''
+Given the following summary, your task is to generate a continuation for \
+the provided human-authored text snippet with around $num_words words. \
+The genre of the writing is $genre. Do not output anything other than the writing. 
+
+### Writing Task Summary
+
+$summary
+
+### Human-Authored Text Snippet
+
+$snippet
+
+Begin your response below:
+'''.strip()
+    
+    exemplars_plus_summary_prompt_tmp = '''
+You will be given one or more writing samples from a specific author plus \
+a text snippet of $genre from the same author. Your task is to analyze the author's style, \
+tone, and voice, then generate a continuation for the provided human-authored text snippet \
+with around $num_words words that closely mimics their writing based on a provided summary. 
+
+### Author's Writing Sample(s)
+
+$writing_samples
+
+### Writing Task Summary
+
+$summary
+
+### Human-Authored Text Snippet
+
+$snippet
+
+### Instructions
+
+- Ensure your writing faithfully replicates the author's style, including tone, word choices, and sentence structure, etc.
+- Maintain consistency with the author's voice while accurately reflecting the details of the given summary.
+- Strive to make your writing indistinguishable from the original author's work.
+- Do not output anything other than the writing.
+
+Begin your response below:
+'''.strip()
+
+    return [Template(summary_only_prompt_tmp), 
+            Template(exemplars_plus_summary_prompt_tmp)]

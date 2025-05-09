@@ -8,6 +8,7 @@ from time import sleep
 import os
 from os import listdir, walk
 from os.path import isfile, join
+import pandas as pd
 
 
 def get_completion(prompt, 
@@ -92,3 +93,34 @@ def find_directories_with_file(root_dir, target_filename):
             matching_dirs.append(dirpath)
 
     return matching_dirs
+
+
+def align_df1_to_df2(df1, df2, col1, col2, col3):
+    """
+    Aligns df1 to df2 based on matching values in columns `col1,` `col2` and `col3`,
+    handling duplicates in both dataframes.
+
+    Returns a new DataFrame with the same number of rows and order as df2,
+    by selecting matching rows from df1.
+    """
+    df1_temp = df1.copy()
+    df1_temp['_used'] = False
+    matched_rows = []
+
+    for _, row in df2.iterrows():
+        match = df1_temp[
+            (df1_temp[col1] == row[col1]) &
+            (df1_temp[col2] == row[col2]) &
+            (df1_temp[col3] == row[col3]) &
+            (~df1_temp['_used'])
+        ]
+
+        if match.empty:
+            return None
+
+        first_match_idx = match.index[0]
+        matched_rows.append(df1_temp.loc[first_match_idx])
+        df1_temp.at[first_match_idx, '_used'] = True
+
+    result = pd.DataFrame(matched_rows).drop(columns=['_used']).reset_index(drop=True)
+    return result

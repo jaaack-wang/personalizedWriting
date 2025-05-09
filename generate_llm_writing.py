@@ -2,19 +2,22 @@ import os
 import argparse
 import pandas as pd
 from tqdm import tqdm
+from nltk.tokenize import word_tokenize
 from scripts.utils import get_completion
 
 from scripts.utils import (
     count_words,
     round_up_to_nearest_10,
-    list_writing_samples
+    list_writing_samples, 
+    align_df1_to_df2
 )
 
 from scripts.prompt_templates import (
  get_prompt_template_for_writing_setting1, 
  get_prompt_template_for_writing_setting2,
  get_prompt_template_for_writing_setting3,
- get_prompt_template_for_writing_setting4   
+ get_prompt_template_for_writing_setting4, 
+ get_prompt_template_for_writing_setting5,   
 )
 
 
@@ -210,6 +213,110 @@ def create_writing_prompts_setting4(evaluation_df_fp,
     return evaluation_df
 
 
+def create_writing_prompts_setting5(training_df_fp, 
+                                    evaluation_df_fp, 
+                                    genre,
+                                    author_col="author", 
+                                    text_col="text", 
+                                    summary_col="summary", 
+                                    num_exemplars=5):
+    
+    def get_text_snippet(text, percentage=0.2):
+        words = word_tokenize(text)
+        num_words = len(words)
+        snippet_length = min(50, int(num_words * percentage))
+        length_to_continue = num_words - snippet_length
+        snippet = " ".join(words[:snippet_length])
+        return snippet, length_to_continue
+    
+    training_df = pd.read_csv(training_df_fp)
+    evaluation_df = pd.read_csv(evaluation_df_fp)
+
+    assert training_df[author_col].value_counts().min() >= num_exemplars, \
+        f"Each author must have at least {num_exemplars} samples in the training set."
+    
+    assert summary_col in evaluation_df.columns, \
+        f"Summary column '{summary_col}' not found in evaluation DataFrame."
+
+    evaluation_df = evaluation_df.copy().reset_index(drop=True)
+    summary_only_prompt_tmp, exemplars_plus_summary_prompt_tmp = \
+        get_prompt_template_for_writing_setting5()
+
+    print(f"Generating summary-only prompts...")
+    for ix, row in tqdm(evaluation_df.iterrows(), total=len(evaluation_df)):
+        summary = row[summary_col]
+        snippet, length_to_continue = get_text_snippet(row[text_col])
+        length_to_continue = round_up_to_nearest_10(length_to_continue)
+        prompt = summary_only_prompt_tmp.substitute(genre=genre, 
+                                                    num_words=length_to_continue, 
+                                                    summary=summary, 
+                                                    snippet=snippet)
+        evaluation_df.at[ix, "training sample indices"] = "-"
+        evaluation_df.at[ix, "prompt"] = prompt
+
+    evaluation_df["Condition"] = "summary-only"
+    out = [evaluation_df.copy()]
+    print(f"Generating exemplars-plus-summary prompts...")
+    
+    dataset = evaluation_df_fp.split("/")[-1].split("_")[0]
+    earlier_setting1_prompts_df = None
+    earlier_setting1_prompts_fp = f"LLM_writing/Setting1/{dataset}/prompts.csv"
+    
+    if os.path.exists(earlier_setting1_prompts_fp):
+        earlier_setting1_prompts_df = pd.read_csv(earlier_setting1_prompts_fp)
+        earlier_setting1_prompts_df = align_df1_to_df2(earlier_setting1_prompts_df, evaluation_df, 
+                                                       text_col, author_col, summary_col)
+        use_random_samples = True if earlier_setting1_prompts_df is None else False
+    
+    for ix, row in tqdm(evaluation_df.iterrows(), total=len(evaluation_df)):
+        author = row[author_col]
+        summary = row[summary_col]
+        snippet, length_to_continue = get_text_snippet(row[text_col])
+        length_to_continue = round_up_to_nearest_10(length_to_continue)
+
+        if earlier_setting1_prompts_df is not None and not use_random_samples:
+
+            indices = [int(i) for i in earlier_setting1_prompts_df.at[ix, "training sample indices"].split(",")]
+            samples = training_df.loc[indices]
+
+            if len(samples) != num_exemplars:
+                print(f"Number of samples found for {row[text_col]} in earlier setting1 prompts is not {num_exemplars}. ")
+                use_random_samples = True
+                break
+                
+            if len(samples[author_col].unique()) != 1:
+                print(f"More than one author found for sample {row[text_col]} in earlier setting1 prompts. " \
+                      f"Found authors: {samples[author_col].unique()}")
+                use_random_samples = True
+                break
+
+            if samples[author_col].values[0] != author:
+                print(f"Author mismatch for sample {row[text_col]} in earlier setting1 prompts.")
+                use_random_samples = True
+                break
+
+            samples = samples[text_col]
+        
+        if use_random_samples:
+            samples = training_df[training_df[author_col]==author][text_col].sample(num_exemplars)
+
+        writing_samples = list_writing_samples(samples)
+        prompt = exemplars_plus_summary_prompt_tmp.substitute(writing_samples=writing_samples, 
+                                                              genre=genre, 
+                                                              num_words=length_to_continue,
+                                                              summary=summary, 
+                                                              snippet=snippet)
+        
+        evaluation_df.at[ix, "training sample indices"] = ",".join([str(ix) for ix in samples.index])
+        evaluation_df.at[ix, "prompt"] = prompt
+    
+    evaluation_df["Condition"] = "exemplars-plus-summary"
+    
+    out.append(evaluation_df.copy())
+    out_df = pd.concat(out, ignore_index=True)
+    return out_df
+
+
 def create_writing_prompts_setting6(training_df_fp, 
                                     evaluation_df_fp, 
                                     genre,
@@ -322,6 +429,20 @@ def generate_or_load_writing_prompts(args, dire):
             genre=args.genre,
             text_col=args.text_col,
             summary_col=args.summary_col
+        )
+    
+    elif args.setting == 5:
+        assert args.training_df_fp is not None, \
+            "Training DataFrame path is required for setting 5."
+        
+        df = create_writing_prompts_setting5(
+            training_df_fp=args.training_df_fp,
+            evaluation_df_fp=args.evaluation_df_fp,
+            genre=args.genre,
+            author_col=args.author_col,
+            text_col=args.text_col,
+            summary_col=args.summary_col,
+            num_exemplars=args.num_exemplars
         )
     
     elif args.setting == 6:
