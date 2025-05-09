@@ -12,6 +12,8 @@ from scripts.utils import (
 
 from scripts.prompt_templates import (
  get_prompt_template_for_writing_setting1, 
+ get_prompt_template_for_writing_setting2,
+ get_prompt_template_for_writing_setting3,
  get_prompt_template_for_writing_setting4   
 )
 
@@ -43,6 +45,11 @@ def create_writing_prompts_setting1(training_df_fp,
                                     text_col="text", 
                                     summary_col="summary", 
                                     num_exemplars=5):
+    '''Create writing prompts for the evaluation set based on the training set.
+    For each sample in the evaluation set, find num_exemplars random samples
+    in the training set to be used as writing examples. 
+    The prompt will include the writing samples and the summary of the evaluation sample.
+    '''
     
     training_df = pd.read_csv(training_df_fp)
     evaluation_df = pd.read_csv(evaluation_df_fp)
@@ -70,8 +77,108 @@ def create_writing_prompts_setting1(training_df_fp,
                                        summary=summary)
         evaluation_df.at[ix, "training sample indices"] = ",".join([str(ix) for ix in samples.index])
         evaluation_df.at[ix, "prompt"] = prompt
+    
+    return evaluation_df
 
-    evaluation_df.to_csv(evaluation_df_fp, index=False)
+
+def create_writing_prompts_setting2(training_df_fp, 
+                                    evaluation_df_fp, 
+                                    genre,
+                                    author_col="author", 
+                                    text_col="text", 
+                                    summary_col="summary", 
+                                    num_exemplars=5):
+    '''Create writing prompts for the evaluation set based on the training set.
+    For each sample in the evaluation set, find the num_exemplars most similar samples
+    in the training set that belong to the same cluster of the evaluation sample. 
+    The prompt will include the writing samples and the summary of the evaluation sample.
+    '''
+    
+    training_df = pd.read_csv(training_df_fp)
+    evaluation_df = pd.read_csv(evaluation_df_fp)
+
+    assert training_df[author_col].value_counts().min() >= num_exemplars, \
+        f"Each author must have at least {num_exemplars} samples in the training set."
+    
+    assert summary_col in evaluation_df.columns, \
+        f"Summary column '{summary_col}' not found in evaluation DataFrame."
+    
+    assert "cluster" in training_df.columns, \
+        f"Cluster column 'cluster' not found in training DataFrame."
+    
+    assert "cluster" in evaluation_df.columns, \
+        f"Cluster column 'cluster' not found in evaluation DataFrame."
+
+    evaluation_df = evaluation_df.copy()
+    prompt_tmp = get_prompt_template_for_writing_setting2()        
+    
+    print(f"Generating prompts...")
+    for ix, row in tqdm(evaluation_df.iterrows(), total=len(evaluation_df)):
+        
+        author = row[author_col]
+        summary = row[summary_col]
+        cluster = row["cluster"]
+        
+        num_words = round_up_to_nearest_10(count_words(row[text_col]))
+        samples = training_df[(training_df[author_col]==author) & 
+                              (training_df["cluster"]==cluster)][text_col].sample(num_exemplars)
+        
+        writing_samples = list_writing_samples(samples)
+        prompt = prompt_tmp.substitute(writing_samples=writing_samples, 
+                                       genre=genre, num_words=num_words,
+                                       summary=summary)
+        evaluation_df.at[ix, "training sample indices"] = ",".join([str(ix) for ix in samples.index])
+        evaluation_df.at[ix, "prompt"] = prompt
+    
+    return evaluation_df
+
+
+
+
+def create_writing_prompts_setting3(training_df_fp, 
+                                    evaluation_df_fp, 
+                                    genre,
+                                    author_col="author", 
+                                    text_col="text", 
+                                    summary_col="summary", 
+                                    num_exemplars=5):
+    '''Create writing prompts for the evaluation set based on the training set.
+    For each sample in the evaluation set, find the num_exemplars most similar samples
+    in the training set based on word count. The prompt will include the writing samples
+    and the summary of the evaluation sample.
+    '''
+    
+    training_df = pd.read_csv(training_df_fp)
+    evaluation_df = pd.read_csv(evaluation_df_fp)
+    training_df["num_words"] = training_df[text_col].apply(count_words)
+
+    assert training_df[author_col].value_counts().min() >= num_exemplars, \
+        f"Each author must have at least {num_exemplars} samples in the training set."
+    
+    assert summary_col in evaluation_df.columns, \
+        f"Summary column '{summary_col}' not found in evaluation DataFrame."
+
+    evaluation_df = evaluation_df.copy()
+    prompt_tmp = get_prompt_template_for_writing_setting3()        
+    
+    print(f"Generating prompts...")
+    for ix, row in tqdm(evaluation_df.iterrows(), total=len(evaluation_df)):
+        
+        author = row[author_col]
+        summary = row[summary_col]
+        
+        num_words = count_words(row[text_col])
+        samples = training_df.copy()[training_df[author_col]==author]
+        samples["wc_diff"] = abs(samples["num_words"] - num_words)
+        samples = samples.sort_values("wc_diff", ).head(num_exemplars)
+        
+        writing_samples = list_writing_samples(samples)
+        prompt = prompt_tmp.substitute(writing_samples=writing_samples, 
+                                       genre=genre, num_words=round_up_to_nearest_10(num_words),
+                                       summary=summary)
+        evaluation_df.at[ix, "training sample indices"] = ",".join([str(ix) for ix in samples.index])
+        evaluation_df.at[ix, "prompt"] = prompt
+
     
     return evaluation_df
 
@@ -80,7 +187,8 @@ def create_writing_prompts_setting4(evaluation_df_fp,
                                     genre,
                                     text_col="text", 
                                     summary_col="summary"):
-    
+    '''Create writing prompts for the evaluation set based a summary.
+    '''
     evaluation_df = pd.read_csv(evaluation_df_fp)
 
     assert summary_col in evaluation_df.columns, \
@@ -98,8 +206,6 @@ def create_writing_prompts_setting4(evaluation_df_fp,
                                        summary=summary)
         evaluation_df.at[ix, "prompt"] = prompt
 
-    evaluation_df.to_csv(evaluation_df_fp, index=False)
-
     return evaluation_df
 
 
@@ -116,6 +222,34 @@ def generate_or_load_writing_prompts(args, dire):
             "Training DataFrame path is required for setting 1."
         
         df = create_writing_prompts_setting1(
+            training_df_fp=args.training_df_fp,
+            evaluation_df_fp=args.evaluation_df_fp,
+            genre=args.genre,
+            author_col=args.author_col,
+            text_col=args.text_col,
+            summary_col=args.summary_col,
+            num_exemplars=args.num_exemplars
+        )
+
+    elif args.setting == 2:
+        assert args.training_df_fp is not None, \
+            "Training DataFrame path is required for setting 2."
+        
+        df = create_writing_prompts_setting2(
+            training_df_fp=args.training_df_fp,
+            evaluation_df_fp=args.evaluation_df_fp,
+            genre=args.genre,
+            author_col=args.author_col,
+            text_col=args.text_col,
+            summary_col=args.summary_col,
+            num_exemplars=args.num_exemplars
+        )
+    
+    elif args.setting == 3:
+        assert args.training_df_fp is not None, \
+            "Training DataFrame path is required for setting 3."
+        
+        df = create_writing_prompts_setting3(
             training_df_fp=args.training_df_fp,
             evaluation_df_fp=args.evaluation_df_fp,
             genre=args.genre,
