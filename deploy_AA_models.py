@@ -132,7 +132,7 @@ def main():
             ckpt_dir_names.sort(key=lambda x: int(x.split("-")[1]))
             ckpt_dir = os.path.join(dir_path, ckpt_dir_names[-1])
 
-            for setting in [1, 2, 3, 4, 5]:
+            for setting in [1, 2, 3, 4, 5, 6]:
                 dataset_dir = os.path.join("LLM_writing", f"Setting{setting}", dataset)
 
                 if not os.path.exists(dataset_dir):
